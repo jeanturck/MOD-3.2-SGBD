@@ -1,0 +1,237 @@
+import tkinter as tk
+from tkinter import ttk
+import psycopg2
+from PIL import Image, ImageTk
+
+#Utilisateurs pouvant accéder à la base de données
+administrateurs = {'sergentp.paul@gmail.com':'1234Paul', 'jean.turck@gmail.com':'1234Jean'}
+
+
+#booléen pour accès administrateur
+admin  = False #Par défaut
+
+#Connexion à la DB 
+#A MODIFIER SI BESOIN !
+conn = psycopg2.connect(
+user = "postgres",
+password = "postgres",
+host = "localhost",
+port = "5432",
+database = "Test_DB")
+cursor = conn.cursor()
+
+
+#Layout style
+bg_color = '#001E4B'
+fg_color = 'white'
+police = "Courrier"
+
+#Fonctions utilisées
+
+
+def test_login():
+    email = data_entry_Email.get()
+    password = data_entry_password.get()
+    if email in administrateurs :
+        if password == administrateurs[email]:
+            print("Bienvenue")
+            login_window.destroy()
+            requête_window.deiconify()
+            admin = True
+        else:
+            print("Mauvais mdp")
+            mauvais_identifiants.pack()
+
+    else:
+        print("Mauvais Email")
+        mauvais_identifiants.pack()
+
+def acces_donnees(): #idem, juste pas d'accès admin
+    
+    requête_window.deiconify()
+    login_window.destroy()
+    
+
+
+def formater_réponses(reponses):
+    rep = ""
+    taille_max = [0] * len(reponses[0])
+    for k in range(len(reponses)):
+        for l in range(len(reponses[k])):
+            taille_obj = len(str(reponses[k][l]))
+            if taille_obj > taille_max[l]:
+                taille_max[l] = taille_obj
+    #Nous permet d'avoir toutes les tailles de réponses
+
+    for k in range(len(reponses)):
+        for l in range(len(reponses[k])):
+            taille_obj = len(str(reponses[k][l])) #on reprend la même variable pour la comparer
+            nb_espaces = taille_max[l] - taille_obj
+            rep += str(reponses[k][l]) + " " * nb_espaces + "  "
+        rep += "\n"
+    print(rep)
+    return rep
+
+
+def envoi_requête():
+
+    requête = data_entry.get(1.0, tk.END)
+    # Exécution d'une requête d'insertion de données
+    #print(requête)
+    try :
+        cursor.execute(requête)
+    except : 
+        data_output.delete(1.0, tk.END)
+        data_output.insert(1.0, "Erreur dans la requête")
+    
+    try : 
+        results = cursor.fetchall()
+        data_output.delete(1.0, tk.END)
+        resultat = formater_réponses(results)
+        data_output.insert(1.0, resultat)
+    except : 
+        data_output.delete(1.0, tk.END)
+        data_output.insert(1.0, "Requête reçue - pas de résultat")
+
+        # Enregistrement des modifications de la base de données
+    if admin == True :
+        conn.commit()
+    else:
+        conn.rollback()
+
+def update():
+
+    requête = data_entry.get(1.0, tk.END)
+
+    try :
+        cursor.execute(requête)
+        data_output.insert(1.0, "Requête réussie")
+
+    except :
+        data_output.delete(1.0, tk.END)
+        data_output.insert(1.0, "Erreur dans la requête")
+
+
+# Création de la première fenêtre
+login_window = tk.Tk()
+
+#Dimensions fenêtre
+login_window.geometry("720x480")
+login_window.minsize(620,360)
+login_window.title("Login - Jeans Factory")
+login_window.config(background=bg_color)
+
+##----- Importation de l'image avec PIL et conversion -----##
+im = Image.open('BLUE JEANS.png')
+im = im.resize([120,120])
+logo = ImageTk.PhotoImage(im, master=login_window)
+
+##----- Création du canevas et affichage de l'image -----##
+dessin = tk.Canvas(login_window, width = im.size[0], height = im.size[1])
+logo1 = dessin.create_image(0,0, anchor = tk.NW, image = logo)
+dessin.pack(pady=10)
+
+#Fenêtre 1
+Main_frame = tk.Frame(login_window, bg=bg_color)
+Main_frame.pack(pady=20)
+
+desc_label= tk.Label(Main_frame,text="Rentrer vos identifiants pour modifier la base", font=("Courrier", 20), bg=bg_color, fg=fg_color)
+desc_label.pack(pady=10)
+
+#Zone de texte prénom
+Frame_infos = tk.Frame(Main_frame, bg=bg_color, bd=1, relief="sunken")
+Frame_infos.pack(side="left",pady=10)
+
+email_label= tk.Label(Frame_infos,text="Email :", font=("Courrier", 15), bg=bg_color, fg=fg_color)
+email_label.pack(side="left", pady=10, padx=5)
+
+data_entry_Email = ttk.Entry(Frame_infos)
+data_entry_Email.pack(side="left", pady=10, padx=5)
+
+#Zone de texte password
+
+password_label= tk.Label(Frame_infos,text="Password :", font=("Courrier", 15), bg=bg_color, fg=fg_color, bd=0)
+password_label.pack(side="left", pady=10, padx=5)
+
+data_entry_password = ttk.Entry(Frame_infos, show='*')
+data_entry_password.pack(side= "left", pady=10, padx=5, expand="yes")
+
+#Bouton Login
+bouton_login = tk.Button(Frame_infos, text="Login", command=test_login, bg=bg_color, activebackground='blue', bd=0)
+bouton_login.pack(side="left",pady=5, padx=5)
+
+#Mauvais_ID
+
+mauvais_identifiants = tk.Label(login_window, text="Identifiants incorrect", font = ("Courrier", 10), bg=bg_color, fg='red',bd=0)
+
+#Bouton Accès aux données
+bouton_accéder = tk.Button(login_window, text="Accéder aux données", command=acces_donnees, bg=bg_color, activebackground='blue', bd=0)
+bouton_accéder.pack(pady=10, padx=5)
+
+
+# Création de la fenêtre principale
+requête_window = tk.Tk()
+
+#Dimensions fenêtre
+#requête_window.geometry("720x480")
+requête_window.minsize(620,360)
+requête_window.title("DB - Jeans Factory access")
+requête_window.config(background=bg_color)
+
+
+logo2 = ImageTk.PhotoImage(im, master=requête_window)
+
+dessin2 = tk.Canvas(requête_window, width = im.size[0], height = im.size[1])
+logo3 = dessin2.create_image(0,0, anchor = tk.NW, image = logo2)
+dessin2.pack(pady=10)
+
+#Fenêtre 1
+
+
+Main_frame = tk.Frame(requête_window, bg=bg_color)
+Main_frame.pack(padx = 5, pady=10)
+
+desc_label= tk.Label(Main_frame,text="DB JEANS FACTORY", font=("Courrier", 20), bg=bg_color, fg=fg_color)
+desc_label.pack(pady=0)
+
+#Zone d'entrée de texte (requête)
+Frame_requête = tk.Frame(requête_window, bg=bg_color, width=50, height=50)
+Frame_requête.pack(side='left', padx=(5))
+
+demande_label= tk.Label(Frame_requête,text="Entrez votre requête :", font=("Courrier", 15), bg=bg_color, fg=fg_color, bd=0)
+demande_label.pack(pady=10, padx=5)
+
+data_entry = tk.Text(Frame_requête, height=15, width=70)
+data_entry.pack(padx=5, pady=5)
+
+# Bouton pour valider la requête
+
+bouton_valider = tk.Button(Frame_requête, text="Valider", command=envoi_requête, bg=bg_color, activebackground='blue', bd=0)
+bouton_valider.pack(pady=5, padx=5)
+
+#Zone de sortie de texte (résultat)
+
+Frame_sortie = tk.Frame(Frame_requête, bg=bg_color, width=50, height=50)
+Frame_sortie.pack(side='bottom')
+
+résultats_label= tk.Label(Frame_sortie,text="Résultat :", font=("Courrier", 15), bg=bg_color, fg=fg_color, bd=0)
+résultats_label.pack(pady=10, padx=5)
+
+data_output = tk.Text(Frame_sortie, height=15, width=70)
+data_output.pack(padx=5, pady=5)
+
+#Mode d'emploi de la BDD
+
+im2 = Image.open('diag_ER.png')
+w = im2.size[0]
+h = im2.size[1]
+frame_mode_emploi = tk.Frame(requête_window, width=round(w*0.7), height=round(h*0.7))
+frame_mode_emploi.pack(side='right')
+imtest = ImageTk.PhotoImage(im2, master=requête_window)
+panel = tk.Label(frame_mode_emploi, image=imtest)
+panel.pack(side='right', fill = 'both', expand='yes')
+
+
+# Boucle d'événements de Tkinter
+requête_window.withdraw()
+login_window.mainloop()
