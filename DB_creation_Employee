@@ -13,5 +13,5 @@ CREATE TABLE "Employee" (
 -- Indices -------------------------------------------------------
 
 CREATE UNIQUE INDEX "Employee_pkey" ON "Employee"("Employee_ID" int4_ops);
-CREATE INDEX "Work_ID" ON "Employee"("Work_ID" int4_ops);
-CREATE INDEX "Employee_Name" ON "Employee"("First_Name" text_ops,"Last_Name" text_ops);
+CREATE INDEX "Work_ID_fkey" ON "Employee"("Work_ID" int4_ops);
+CREATE INDEX "Employee_Name_idx" ON "Employee"("First_Name" text_ops,"Last_Name" text_ops);
