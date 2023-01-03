@@ -1,0 +1,7 @@
+Work_ID,Operation,Goal,Salary_rate,Work_Type
+1,devant,1000,0.5,piece
+2,derriere,1000,0.5,piece
+3,assemblage,1000,0.5,piece
+4,devant,48,11,day
+5,derriere,48,11,day
+6,assemblage,48,11,day
